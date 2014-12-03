@@ -166,8 +166,15 @@ class Behavior extends \yii\base\Behavior
 	 */
 	protected function getProcessedData()
 	{
-		// TODO : add processing
-		return $this->dataMap;
+		$data = [];
+		foreach ($this->dataMap as $elasticField => $attribute) {
+			if(is_callable($attribute)) {
+				$data[$elasticField] = call_user_func($attribute);
+			} else {
+				$data[$elasticField] = $this->owner->{$attribute};
+			}
+		}
+		return $data;
 	}
 
 	/**
