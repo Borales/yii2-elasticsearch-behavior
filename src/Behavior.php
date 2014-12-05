@@ -46,153 +46,153 @@ use yii\elasticsearch\Connection;
  */
 class Behavior extends \yii\base\Behavior
 {
-	const MODE_COMMAND = 'command';
-	const MODE_MODEL = 'model';
+    const MODE_COMMAND = 'command';
+    const MODE_MODEL = 'model';
 
-	/**
-	 * @var string Behavior mode
-	 */
-	public $mode = self::MODE_MODEL;
-	/**
-	 * @var string Elasticsearch App Component
-	 */
-	public $esComponent = 'elasticsearch';
-	/**
-	 * @var string Class name (extended from \yii\elasticsearch\ActiveRecord)
-	 */
-	public $elasticClass;
-	/**
-	 * @var string Elasticsearch Index
-	 */
-	public $elasticIndex;
-	/**
-	 * @var string Elasticsearch Type
-	 */
-	public $elasticType;
-	/**
-	 * @var array Model's data
-	 */
-	public $dataMap;
+    /**
+     * @var string Behavior mode
+     */
+    public $mode = self::MODE_MODEL;
+    /**
+     * @var string Elasticsearch App Component
+     */
+    public $esComponent = 'elasticsearch';
+    /**
+     * @var string Class name (extended from \yii\elasticsearch\ActiveRecord)
+     */
+    public $elasticClass;
+    /**
+     * @var string Elasticsearch Index
+     */
+    public $elasticIndex;
+    /**
+     * @var string Elasticsearch Type
+     */
+    public $elasticType;
+    /**
+     * @var array Model's data
+     */
+    public $dataMap;
 
-	/**
-	 * @throws InvalidConfigException
-	 */
-	public function init()
-	{
-		parent::init();
-		if($this->mode == self::MODE_COMMAND) {
-			if(!$this->elasticType || !$this->elasticIndex) {
-				throw new InvalidConfigException("You must set 'elasticIndex' and 'elasticType' attributes while working in MODE_COMMAND");
-			}
-		} else {
-			if(!$this->elasticClass) {
-				throw new InvalidConfigException("You must set 'elasticClass' attribute (extended from \\yii\\elasticsearch\\ActiveRecord) while working in MODE_MODEL");
-			}
-		}
-		if(!$this->dataMap) {
-			throw new InvalidConfigException("You must set 'dataMap' attribute to define index record data");
-		}
-	}
+    /**
+     * @throws InvalidConfigException
+     */
+    public function init()
+    {
+        parent::init();
+        if ($this->mode == self::MODE_COMMAND) {
+            if (!$this->elasticType || !$this->elasticIndex) {
+                throw new InvalidConfigException("You must set 'elasticIndex' and 'elasticType' attributes while working in MODE_COMMAND");
+            }
+        } else {
+            if (!$this->elasticClass) {
+                throw new InvalidConfigException("You must set 'elasticClass' attribute (extended from \\yii\\elasticsearch\\ActiveRecord) while working in MODE_MODEL");
+            }
+        }
+        if (!$this->dataMap) {
+            throw new InvalidConfigException("You must set 'dataMap' attribute to define index record data");
+        }
+    }
 
-	/**
-	 * @return array
-	 */
-	public function events()
-	{
-		return [
-			BaseActiveRecord::EVENT_AFTER_INSERT => 'insert',
-			BaseActiveRecord::EVENT_AFTER_UPDATE => 'update',
-			BaseActiveRecord::EVENT_AFTER_DELETE => 'delete',
-		];
-	}
+    /**
+     * @return array
+     */
+    public function events()
+    {
+        return [
+            BaseActiveRecord::EVENT_AFTER_INSERT => 'insert',
+            BaseActiveRecord::EVENT_AFTER_UPDATE => 'update',
+            BaseActiveRecord::EVENT_AFTER_DELETE => 'delete',
+        ];
+    }
 
-	/**
-	 * Inserting Elasticsearch index record
-	 * @param Event $event
-	 * @param null $data
-	 */
-	public function insert(Event $event, $data = null)
-	{
-		$data = $data ? $data : $this->getProcessedData();
-		if($this->mode == self::MODE_COMMAND) {
-			$this->db()->createCommand()
-				->insert($this->elasticIndex, $this->elasticType, $data, $this->getPK());
-		} else {
-			/** @var ActiveRecord $model */
-			$model = \Yii::createObject($this->elasticClass, $data);
-			$model->save();
-		}
-	}
+    /**
+     * Inserting Elasticsearch index record
+     * @param Event $event
+     * @param null $data
+     */
+    public function insert(Event $event, $data = null)
+    {
+        $data = $data ? $data : $this->getProcessedData();
+        if ($this->mode == self::MODE_COMMAND) {
+            $this->db()->createCommand()
+                ->insert($this->elasticIndex, $this->elasticType, $data, $this->getPK());
+        } else {
+            /** @var ActiveRecord $model */
+            $model = \Yii::createObject($this->elasticClass, $data);
+            $model->save();
+        }
+    }
 
-	/**
-	 * Updating Elasticsearch index record.
-	 * If indexed record was not found - insert operation will be executed.
-	 * @param Event $event
-	 */
-	public function update(Event $event)
-	{
-		$data = $this->getProcessedData();
-		if($this->mode == self::MODE_COMMAND) {
-			$this->db()->createCommand()
-				->update($this->elasticIndex, $this->elasticType, $this->getPK(), $data);
-		} else {
-			/** @var ActiveRecord $class */
-			$class = $this->elasticClass;
-			if(!$class::updateAll($data, ['_id' => $this->getPK()])) {
-				$this->insert($event, $data);
-			}
-		}
-	}
+    /**
+     * Updating Elasticsearch index record.
+     * If indexed record was not found - insert operation will be executed.
+     * @param Event $event
+     */
+    public function update(Event $event)
+    {
+        $data = $this->getProcessedData();
+        if ($this->mode == self::MODE_COMMAND) {
+            $this->db()->createCommand()
+                ->update($this->elasticIndex, $this->elasticType, $this->getPK(), $data);
+        } else {
+            /** @var ActiveRecord $class */
+            $class = $this->elasticClass;
+            if (!$class::updateAll($data, ['_id' => $this->getPK()])) {
+                $this->insert($event, $data);
+            }
+        }
+    }
 
-	/**
-	 * Deleting record from Elasticsearch index
-	 * @param Event $event
-	 */
-	public function delete(Event $event)
-	{
-		if($this->mode == self::MODE_COMMAND) {
-			$this->db()->createCommand()
-				->delete($this->elasticIndex, $this->elasticType, $this->getPK());
-		} else {
-			/** @var ActiveRecord $class */
-			$class = $this->elasticClass;
-			$class::deleteAll(['_id' => $this->getPK()]);
-		}
-	}
+    /**
+     * Deleting record from Elasticsearch index
+     * @param Event $event
+     */
+    public function delete(Event $event)
+    {
+        if ($this->mode == self::MODE_COMMAND) {
+            $this->db()->createCommand()
+                ->delete($this->elasticIndex, $this->elasticType, $this->getPK());
+        } else {
+            /** @var ActiveRecord $class */
+            $class = $this->elasticClass;
+            $class::deleteAll(['_id' => $this->getPK()]);
+        }
+    }
 
-	/**
-	 * Process dataMap to attribute values
-	 * @return array
-	 */
-	protected function getProcessedData()
-	{
-		$data = [];
-		foreach ($this->dataMap as $elasticField => $attribute) {
-			if(is_callable($attribute)) {
-				$data[$elasticField] = call_user_func($attribute);
-			} else {
-				$data[$elasticField] = $this->owner->{$attribute};
-			}
-		}
-		return $data;
-	}
+    /**
+     * Process dataMap to attribute values
+     * @return array
+     */
+    protected function getProcessedData()
+    {
+        $data = [];
+        foreach ($this->dataMap as $elasticField => $attribute) {
+            if (is_callable($attribute)) {
+                $data[$elasticField] = call_user_func($attribute);
+            } else {
+                $data[$elasticField] = $this->owner->{$attribute};
+            }
+        }
+        return $data;
+    }
 
-	/**
-	 * @return mixed
-	 */
-	protected function getPK()
-	{
-		/** @var \yii\db\ActiveRecord $owner */
-		$owner = $this->owner;
-		return $owner->primaryKey;
-	}
+    /**
+     * @return mixed
+     */
+    protected function getPK()
+    {
+        /** @var \yii\db\ActiveRecord $owner */
+        $owner = $this->owner;
+        return $owner->primaryKey;
+    }
 
-	/**
-	 * @return null|Connection
-	 * @throws \yii\base\InvalidConfigException
-	 */
-	protected function db()
-	{
-		return \Yii::$app->get($this->esComponent);
-	}
+    /**
+     * @return null|Connection
+     * @throws \yii\base\InvalidConfigException
+     */
+    protected function db()
+    {
+        return \Yii::$app->get($this->esComponent);
+    }
 }
