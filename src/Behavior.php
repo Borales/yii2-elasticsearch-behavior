@@ -4,7 +4,9 @@ namespace borales\behaviors\elasticsearch;
 
 use yii\base\Event;
 use yii\base\InvalidConfigException;
+use yii\base\InvalidParamException;
 use yii\db\BaseActiveRecord;
+use yii\db\Expression;
 use yii\elasticsearch\ActiveRecord;
 use yii\elasticsearch\Connection;
 
@@ -170,7 +172,13 @@ class Behavior extends \yii\base\Behavior
         foreach ($this->dataMap as $elasticField => $attribute) {
             if (is_callable($attribute)) {
                 $data[$elasticField] = call_user_func($attribute);
-            } else {
+            } elseif($attribute instanceof Expression) {
+                if(trim($attribute->expression) == 'NOW()') {
+                    $data[$elasticField] = date("Y-m-d H:i:s");
+                } else {
+                    throw new InvalidParamException('Attribute "'.$elasticField.'" can not be instance of \yii\db\Expression');
+                }
+            }  else {
                 $data[$elasticField] = $this->owner->{$attribute};
             }
         }
