@@ -172,14 +172,19 @@ class Behavior extends \yii\base\Behavior
         foreach ($this->dataMap as $elasticField => $attribute) {
             if (is_callable($attribute)) {
                 $data[$elasticField] = call_user_func($attribute);
-            } elseif($attribute instanceof Expression) {
-                if(trim($attribute->expression) == 'NOW()') {
-                    $data[$elasticField] = date("Y-m-d H:i:s");
-                } else {
-                    throw new InvalidParamException('Attribute "'.$elasticField.'" can not be instance of \yii\db\Expression');
+                if($data[$elasticField] instanceof Expression) {
+                    if(trim($data[$elasticField]->expression) == 'NOW()') {
+                        $data[$elasticField] = date("Y-m-d H:i:s");
+                    } else {
+                        throw new InvalidParamException('Attribute value of "'.$elasticField.'" can not be instance of \yii\db\Expression');
+                    }
+                } elseif(!is_string($data[$elasticField])) {
+                    throw new InvalidParamException("Unknown value format for the attribute \"{$elasticField}\"!");
                 }
-            }  else {
+            } elseif(is_string($attribute)) {
                 $data[$elasticField] = $this->owner->{$attribute};
+            } else {
+                throw new InvalidParamException("Unknown value format for the attribute \"{$elasticField}\"!");
             }
         }
         return $data;
