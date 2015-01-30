@@ -2,7 +2,13 @@
     "name": "borales/yii2-elasticsearch-behavior",
     "version": "0.0.1",
     "description": "Yii2 behavior to support Elasticsearch indexing",
-    "keywords": ["yii2", "yii2-behavior", "behavior", "elasticsearch", "es"],
+    "keywords": [
+        "yii2",
+        "yii2-behavior",
+        "behavior",
+        "elasticsearch",
+        "es"
+    ],
     "homepage": "https://github.com/Borales/yii2-elasticsearch-behavior",
     "minimum-stability": "dev",
     "type": "yii2-extension",

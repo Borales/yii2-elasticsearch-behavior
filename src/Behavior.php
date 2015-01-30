@@ -44,7 +44,7 @@ use yii\elasticsearch\Connection;
  *
  * @link https://github.com/Borales/yii2-elasticsearch-behavior
  * @author Borales <bordun.alexandr@gmail.com>
- * @version 0.0.1-dev
+ * @version 0.0.1
  */
 class Behavior extends \yii\base\Behavior
 {
@@ -54,7 +54,7 @@ class Behavior extends \yii\base\Behavior
     /**
      * @var string Behavior mode
      */
-    public $mode = self::MODE_MODEL;
+    public $mode = self::MODE_COMMAND;
     /**
      * @var string Elasticsearch App Component
      */
@@ -90,9 +90,6 @@ class Behavior extends \yii\base\Behavior
             if (!$this->elasticClass) {
                 throw new InvalidConfigException("You must set 'elasticClass' attribute (extended from \\yii\\elasticsearch\\ActiveRecord) while working in MODE_MODEL");
             }
-        }
-        if (!$this->dataMap) {
-            throw new InvalidConfigException("You must set 'dataMap' attribute to define index record data");
         }
     }
 
@@ -163,12 +160,16 @@ class Behavior extends \yii\base\Behavior
     }
 
     /**
-     * Process dataMap to attribute values
+     * Retrieve owner's attribute values
      * @return array
      */
     protected function getProcessedData()
     {
         $data = [];
+        if(!$this->dataMap) {
+            return $this->owner->attributes;
+        }
+
         foreach ($this->dataMap as $elasticField => $attribute) {
             if (is_callable($attribute)) {
                 $data[$elasticField] = call_user_func($attribute);
