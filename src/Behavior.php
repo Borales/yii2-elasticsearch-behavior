@@ -132,8 +132,9 @@ class Behavior extends \yii\base\Behavior
     {
         $data = $this->getProcessedData();
         if ($this->mode == self::MODE_COMMAND) {
-            $this->db()->createCommand()
-                ->update($this->elasticIndex, $this->elasticType, $this->getPK(), $data);
+            if (!$this->db()->createCommand()->update($this->elasticIndex, $this->elasticType, $this->getPK(), $data)) {
+                $this->db()->createCommand()->insert($this->elasticIndex, $this->elasticType, $data, $this->getPK());
+            }
         } else {
             /** @var ActiveRecord $class */
             $class = $this->elasticClass;
